@@ -1,0 +1,9 @@
+project:
+  output-dir: _docs
+
+website:
+  title: "aulys"
+  site-url: "https://nguyenbaanh7779.github.io/aulys"
+  description: "Give some method to statistic and plot analysis data"
+  repo-branch: main
+  repo-url: "https://github.com/nguyenbaanh7779/aulys"
