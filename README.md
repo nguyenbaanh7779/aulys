@@ -104,7 +104,9 @@ Bảng tổng quan sẽ bao gồm các thông tin sau cho mỗi cột trong Data
 Giả sử bạn có một DataFrame `df` và muốn tạo bảng tổng quan về dữ liệu:
 
 ```python
-overview_table(df=df_acc)
+from aulys import aulys
+
+aulys.overview_table(df=df_acc)
 ```
 
 ### Vẽ Biểu Đồ Đơn Biến
