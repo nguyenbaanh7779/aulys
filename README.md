@@ -83,7 +83,14 @@ Hàm `stast_fea(df, idx_col, cat_cols, num_cols)` thực hiện việc tính to�
 Giả sử bạn có một DataFrame `df` và muốn tính toán các thống kê cho các cột phân loại và số, với cột `idx_col` là chỉ mục:
 
 ```python
-stast_fea(df, idx_col='idx_col', cat_cols=['category1', 'category2'], num_cols=['numerical1', 'numerical2'])
+from aulys import aulys
+
+aulys.stast_fea(
+    df, 
+    idx_col='idx_col', c
+    at_cols=['category1', 'category2'], 
+    num_cols=['numerical1', 'numerical2']
+)
 ```
 
 ### Thống Kê Tổng Quan Về Dữ Liệu
@@ -143,11 +150,14 @@ Cấu hình bin được tạo dưới dạng json gồm tên cột và các m�
 
 Nếu muốn vẽ biểu đồ đơn biến của một dataframe `df` thì ta thực hiện như sau:
 ```python
+from aulys import aulys
+
 bin_cols = {
     "age": [20, 30, 40, 50, 60],
     "income": [1000, 2000, 3000, 4000, 5000]
 }
-plot_univariate(df=df, bin_cols=bin_cols)
+
+aulys.plot_univariate(df=df, bin_cols=bin_cols)
 ```
 
 ### Vẽ Biểu Đồ Phân Tích Đa Biến
@@ -179,9 +189,11 @@ Hàm `plot_multivariate(df, column)` vẽ biểu đồ phân tích đa biến gi
 Giả sử bạn muốn phân tích mối quan hệ giữa cột `column` (một cột số) và các cột còn lại trong DataFrame, bạn có thể sử dụng hàm như sau:
 
 ```python
+from aulys import aulys
+
 bin_cols = {
     "age": [20, 30, 40, 50, 60],
     "income": [1000, 2000, 3000, 4000, 5000]
 }
-plot_multivariate(df=df_acc, column='mean_oper_request_amount')
+aulys.plot_multivariate(df=df_acc, column='column')
 ```
