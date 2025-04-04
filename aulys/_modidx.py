@@ -5,4 +5,8 @@ d = { 'settings': { 'branch': 'main',
                 'doc_host': 'https://nguyenbaanh7779.github.io',
                 'git_url': 'https://github.com/nguyenbaanh7779/aulys',
                 'lib_path': 'aulys'},
-  'syms': {'aulys.core': {'aulys.core.foo': ('core.html#foo', 'aulys/core.py')}}}
+  'syms': { 'aulys.aulys': { 'aulys.aulys.overview_table': ('stast_fea.html#overview_table', 'aulys/aulys.py'),
+                             'aulys.aulys.plot_multivariate': ('stast_fea.html#plot_multivariate', 'aulys/aulys.py'),
+                             'aulys.aulys.plot_univariate': ('stast_fea.html#plot_univariate', 'aulys/aulys.py'),
+                             'aulys.aulys.stast_fea': ('stast_fea.html#stast_fea', 'aulys/aulys.py')},
+            'aulys.core': {'aulys.core.foo': ('core.html#foo', 'aulys/core.py')}}}
