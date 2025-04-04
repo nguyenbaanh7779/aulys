@@ -22,24 +22,7 @@ Install latest from the GitHub [repository][repo]:
 $ pip install git+https://github.com/nguyenbaanh7779/aulys.git
 ```
 
-or from [conda][conda]
-
-```sh
-$ conda install -c nguyenbaanh7779 aulys
-```
-
-or from [pypi][pypi]
-
-
-```sh
-$ pip install aulys
-```
-
-
 [repo]: https://github.com/nguyenbaanh7779/aulys
-[docs]: https://nguyenbaanh7779.github.io/aulys/
-[pypi]: https://pypi.org/project/aulys/
-[conda]: https://anaconda.org/nguyenbaanh7779/aulys
 
 ## How to use
 
