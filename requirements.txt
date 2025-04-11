@@ -1,10 +1,9 @@
-# pyyaml
-# pandas
-# lets_plot
-# xgboost
-# scikit-learn
-# pyspark
-# scorecardpy
-# sliced
-# tqdm
+pyyaml
 pandas
+lets_plot
+xgboost
+scikit-learn
+pyspark
+scorecardpy
+sliced
+tqdm

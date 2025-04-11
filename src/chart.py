@@ -6,6 +6,7 @@ from IPython.display import display, Markdown
 
 import src.metric as metric
 import src.utils as utils
+import src.data as data
 
 
 def letsplot_bar(group: str | None = None):
@@ -109,7 +110,7 @@ def plot_letsplot(
 #########################
 # PLOT EXPLORE DATA CHART
 #########################
-def plot_dist(df, column, type_col):
+def plot_dist(df, column, sort_value):
     """
     Tạo biểu đồ phân phối (số lượng và phần trăm) cho một cột dữ liệu.
 
@@ -121,10 +122,7 @@ def plot_dist(df, column, type_col):
     Returns:
         lets-plot object: Biểu đồ gồm hai biểu đồ thanh - đếm số lượng và phần trăm.
     """
-    if type_col == 'num':
-        df_plot = df[column].value_counts().sort_index().reset_index()
-    else:
-        df_plot = df[column].value_counts().reset_index()
+    df_plot = pd.DataFrame(df[column].value_counts()).T[sort_value].T.reset_index()
     
     df_plot['percent'] = 100 * df_plot['count'] / df_plot['count'].sum()
     return lp.gggrid(
@@ -141,7 +139,7 @@ def plot_dist(df, column, type_col):
     ) + lp.ggsize(1200, 400)
 
 
-def plot_univariate(df, bin_cols={}):
+def plot_univariate(df, bin_cols={}, limit_unique=5):
     """
     Vẽ biểu đồ đơn biến (univariate) cho tất cả các cột trong DataFrame.
 
@@ -152,104 +150,26 @@ def plot_univariate(df, bin_cols={}):
         df (pd.DataFrame): Dữ liệu đầu vào (cột đầu tiên thường là ID, sẽ bỏ qua).
         bin_cols (dict): Từ điển chứa các giá trị phân bin cho các cột số.
     """
-    for col in df.columns[1:]:
+    df_plot = df.copy()
+    for col in df.columns:
         display(
             Markdown(f"<center><h4 style='font-size:24px'>Distribution of {col}</h4></center>")
         )
-
-        # Nếu là biến phân loại
-        if isinstance(df[col].iloc[0], str):
-            display(plot_dist(df=df, column=col, type_col='cat'))
-        else:
-            # Nếu là biến số có nhiều giá trị -> phân bin
-            if df[col].nunique() > 5:
-                df_plot = df.copy()
-                if col in bin_cols:
-                    bins = [-np.inf] + bin_cols[col] + [np.inf]
-                else:
-                    bins = utils.create_bins(df[col])
-
-                df_plot[col] = pd.cut(df_plot[col], bins=bins, include_lowest=True)
-                display(plot_dist(df=df_plot, column=col, type_col='num'))
-            else:
-                display(plot_dist(df=df, column=col, type_col='num'))
-
-
-def plot_categorical(
-    df: pd.DataFrame,
-    column: str,
-    top_k: int = 5,
-    order_config: list | None = None,
-    unit_names: list = ["count", "percentage"],
-):
-    # Tạo giá trị eda cho cột categorical
-    df_valcount = pd.DataFrame(df[column].value_counts()).rename(
-        columns={"count": unit_names[0]}
-    )
-    df_valcount[unit_names[1]] = 100 * df_valcount[unit_names[0]] / df.shape[0]
-    # Sắp xếp index theo thứ tự mong muốn
-    if order_config is not None:
-        df_valcount = pd.merge(
-            left=pd.DataFrame(index=order_config),
-            right=df_valcount,
-            left_index=True,
-            right_index=True,
-            # how="outer"
+        df_plot[col], sort_value = data.process_to_explore(
+            df_plot, col=col, bin_cols=bin_cols, limit_unique=limit_unique
         )
-    df_valcount.index.name = column
-    df_valcount = df_valcount.reset_index()
-    # Lấy 10 cột có phần trăm lớn nhất và cột thứ 11 là tổng hợp của các cột còn lại
-    if df_valcount.shape[0] > top_k:
-        df_valcount = pd.concat(
-            [
-                df_valcount.iloc[:top_k],
-                pd.DataFrame(
-                    {
-                        column: ["other"],
-                        unit_names[0]: [df_valcount[unit_names[0]].iloc[top_k:].sum()],
-                        unit_names[1]: [df_valcount[unit_names[1]].iloc[top_k:].sum()],
-                    }
-                ),
-            ],
-            ignore_index=True,
-        )
-
-    chart = letsplot_bar()
-    return lp.gggrid(
-        [
-            plot_letsplot(
-                df=df_valcount,
-                x=column,
-                y="count",
-                charts=[chart],
-                display_text=True,
-                vjust=0,
-                y_name="Merchants(#)",
-                angle=0,
-            ),
-            plot_letsplot(
-                df=df_valcount,
-                x=column,
-                y="percentage",
-                charts=[chart],
-                display_text=True,
-                vjust=0,
-                y_name="Merchants percentage(%)",
-                text_format="{}%",
-                angle=0,
-            ),
-        ]
-    ) + lp.ggsize(1200, 500)
+        display(plot_dist(df=df_plot, column=col, sort_value=sort_value))
     
 
 def plot_crosstab(
     df: pd.DataFrame, columns: list, label_name: str=None, label_elements: str=None,
-    angle: int =None, sort_values: list =None
+    angle: int =None, sort_values: list =None, is_transpose=True
 ):
     dfs_plot = utils.caculate_crosstab(
         df,
         columns=columns,
-        sort_values=sort_values
+        sort_values=sort_values,
+        is_transpose=is_transpose
     )
     heatmap_chart = letsplot_heatmap(value="value")
     grid_charts = [
@@ -315,7 +235,7 @@ def plot_crosstab(
     return lp.gggrid(grid_charts, ncol=2,)
 
 
-def plot_multivariate(df, column, bin_cols):
+def plot_multivariate(df, column, bin_cols={}, is_transpose=True, angle: int =None, reversed_y=True, limit_unique=5, size=(1500, 1000)):
     """
     Vẽ biểu đồ phân tích đa biến giữa một cột chính (`column`) với tất cả các cột còn lại.
     Tùy vào kiểu dữ liệu (chuỗi hoặc số), cột được chia bin hoặc chuyển thành chuỗi để trực quan hóa.
@@ -330,39 +250,29 @@ def plot_multivariate(df, column, bin_cols):
     """
     
     # Duyệt qua tất cả các cột ngoại trừ cột phân tích chính
-    for col2 in [col for col in df.columns[1:] if col != column]:
+    for col2 in [col for col in df.columns if col != column]:
         df_plot = df.copy()
+        cols = [col2, column]
         sort_values = []  # Danh sách lưu thứ tự phân loại các giá trị trong biểu đồ
 
-        for col in [column, col2]:
-            if isinstance(df_plot[col].iloc[0], str):
-                # Nếu là biến phân loại, lấy thứ tự theo tần suất
-                sort_values.append(list(df_plot[col].value_counts().index))
-                continue
+        for col in cols:
+            df_plot[col], sort_value = data.process_to_explore(
+                df=df_plot, col=col, bin_cols=bin_cols, limit_unique=limit_unique
+            )
+            sort_values.append(sort_value)
 
-            if df_plot[col].nunique() <= 5:
-                # Nếu ít giá trị duy nhất, giữ nguyên và convert sang chuỗi
-                sort_values.append(list(df_plot[col].sort_values().astype(str).unique()))
-                df_plot[col] = df_plot[col].astype(str)
-                continue
-
-            # Nếu là biến số và cần chia bin
-            if col in bin_cols.keys():
-                bins = [-np.inf] + bin_cols[col] + [np.inf]
-            else:
-                bins = utils.create_bins(df_plot[col])
-
-            df_plot[col] = pd.cut(df_plot[col], bins=bins, include_lowest=True)
-            sort_values.append(list(df_plot[col].sort_values().astype(str).unique()))
-            df_plot[col] = df_plot[col].astype(str)
+        if reversed_y:
+            sort_values[1] =  sort_values[1][::-1]
 
         # Vẽ biểu đồ phân phối chéo giữa column và col2
         display(
             plot_crosstab(
                 df=df_plot,
-                columns=[column, col2],
-                sort_values=sort_values
-            ) + lp.ggsize(1500, 1000)
+                columns=cols,
+                sort_values=sort_values,
+                is_transpose=is_transpose,
+                angle=angle
+            ) + lp.ggsize(size[0], size[1])
         )
     
 
@@ -505,6 +415,21 @@ def plot_univariate_by_label(df_bin, size_chart=(1500, 1000), n_limit=None, rang
                 ncol=2
             ) + lp.ggsize(size_chart[0], int(size_chart[1] / 2))
         )
+
+
+def plot_heatmap(df, title=None):
+    df_plot = df.copy()
+
+    df_plot.index.name = None
+    df_plot.columns.name = None
+
+    df_plot = df_plot.iloc[::-1]
+    
+    df_plot = pd.melt(frame=df_plot.reset_index(), id_vars='index', value_vars=df.columns)
+
+    return plot_letsplot(
+        df=df_plot, x='variable', y='index', charts=[letsplot_heatmap(value='value')], angle=30, title=title
+    )
 
 
 ##############################

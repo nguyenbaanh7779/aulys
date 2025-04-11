@@ -8,6 +8,7 @@ import pyspark.sql.types as T
 import scorecardpy as sc
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.decomposition import PCA
+import numpy as np
 
 # from sliced_master.sliced.sir import SlicedInverseRegression
 import config
@@ -673,3 +674,40 @@ def process_data(X_train, X_test, y_train=None, **processed_params):
             X_test = X_test[importance_cols]
     
     return X_train, X_test
+
+
+def process_to_explore(df, col, bin_cols={}, limit_unique=5):
+    df_processed = df.copy()
+    sort_value = None
+    bins = None
+
+    if isinstance(df_processed[col].dropna().iloc[0], str):
+        # Nếu là biến phân loại, lấy thứ tự theo tần suất
+        df_valcoun = df[col].value_counts().reset_index()
+        if df_valcoun.shape[0] > limit_unique:
+            other_val = df_valcoun.iloc[limit_unique:][col].values
+
+            df_processed.loc[df_processed[col].isin(other_val), col] = '<other>'
+            sort_value = [val for val in df_processed[col].value_counts().index if val != '<other>'] + ['<other>']
+
+        else:
+            sort_value = list(df_valcoun[col].values)
+    
+    else:
+        if df_processed[col].nunique() > limit_unique:
+            if col in bin_cols.keys():
+                bins = [df[col].min()] + bin_cols[col] + [df[col].max()]
+
+            else:
+                bins = utils.create_bins(df_processed[col], num_bin=limit_unique)
+
+            df_processed[col] = pd.cut(df_processed[col], bins=bins, include_lowest=True)
+
+        sort_value = list(df_processed[col].value_counts().sort_index().index.astype(str))
+        df_processed[col] = df_processed[col].astype(str)
+
+    if df_processed[col].isna().sum() > 0:
+            df_processed[col] = df_processed[col].fillna('<unknown>')
+            sort_value.append('<unknown>')
+
+    return df_processed[col], sort_value

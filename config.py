@@ -7,10 +7,10 @@ ROOT_PATH = ""
 for path in os.getcwd().split("/"):
     ROOT_PATH += f"{path}/"
 
-PROJECT_NAME = 'scorecard_rpt'
+PROJECT_NAME = 'kiotviet'
 
-TODAY = "20250326"
-DATE_KEY = "20250326"
+TODAY = "20250410"
+DATE_KEY = "20250410"
 
 UTM_SOURCE = "FIZA"
 DPD_N = "dpd_05"

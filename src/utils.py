@@ -237,13 +237,13 @@ def map_province(province, df_region):
 ###########
 # CACULATE
 ###########
-def caculate_crosstab(df: pd.DataFrame, columns: list, sort_values = None):
+def caculate_crosstab(df: pd.DataFrame, columns: list, sort_values = None, is_transpose=True):
     df_cross = pd.crosstab(df[columns[0]], df[columns[1]])
     if sort_values is not None:
         df_cross = df_cross[sort_values[1]].T
         df_cross = df_cross[sort_values[0]].T
         
-    if df_cross.index.shape[0] < df_cross.columns.shape[0]:
+    if df_cross.index.shape[0] < df_cross.columns.shape[0] and is_transpose:
         df_cross = df_cross.T
         columns = [columns[1], columns[0]]
         
