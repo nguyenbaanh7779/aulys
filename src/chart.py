@@ -110,7 +110,7 @@ def plot_letsplot(
 #########################
 # PLOT EXPLORE DATA CHART
 #########################
-def plot_dist(df, column, sort_value):
+def plot_dist(df, column, sort_value, size=[1200, 400]):
     """
     Tạo biểu đồ phân phối (số lượng và phần trăm) cho một cột dữ liệu.
 
@@ -136,10 +136,10 @@ def plot_dist(df, column, sort_value):
                 str_x=True, display_text=True, vjust=0, angle=15, text_format='{}%'
             )
         ]
-    ) + lp.ggsize(1200, 400)
+    ) + lp.ggsize(*size)
 
 
-def plot_univariate(df, bin_cols={}, limit_unique=5):
+def plot_univariate(df, bin_cols={}, limit_unique=5, size=[1200, 400]):
     """
     Vẽ biểu đồ đơn biến (univariate) cho tất cả các cột trong DataFrame.
 
@@ -158,7 +158,9 @@ def plot_univariate(df, bin_cols={}, limit_unique=5):
         df_plot[col], sort_value = data.process_to_explore(
             df_plot, col=col, bin_cols=bin_cols, limit_unique=limit_unique
         )
-        display(plot_dist(df=df_plot, column=col, sort_value=sort_value))
+        display(
+            plot_dist(df=df_plot, column=col, sort_value=sort_value, size=size)
+        )
     
 
 def plot_crosstab(
