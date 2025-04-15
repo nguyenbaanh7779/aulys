@@ -12,6 +12,8 @@ import pandas as pd
 import lets_plot as lp
 from IPython.display import Markdown
 
+sys.path.insert(1, os.getcwd())
+
 import config
 import src.utils as utils
 import src.chart as chart
