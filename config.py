@@ -9,8 +9,12 @@ for path in os.getcwd().split("/"):
 
 PROJECT_NAME = 'kiotviet'
 
-TODAY = "20250414"
-DATE_KEY = "20250414"
+TODAY = "20250421"
+DATE_KEY = "20250421"
 
 UTM_SOURCE = "FIZA"
 DPD_N = "dpd_05"
+
+RAW_PATH = f'data/raw/{PROJECT_NAME}/{TODAY}'
+INTERIM_PATH = f'data/interim/{PROJECT_NAME}'
+PROCESSED_PATH = f'data/processed/{PROJECT_NAME}/{TODAY}'

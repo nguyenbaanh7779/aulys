@@ -16,7 +16,7 @@ sys.path.insert(1, os.getcwd())
 
 import config
 import src.utils as utils
-import src.chart as chart
+import src.plot_chart as plot_chart
 import src.data as data
 
 # %% ../nbs/01_stast_fea.ipynb 7
@@ -79,7 +79,7 @@ def plot_univariate(df, bin_cols):
         df (pd.DataFrame): Dữ liệu đầu vào (cột đầu tiên thường là ID, sẽ bỏ qua).
         bin_cols (dict): Từ điển chứa các giá trị phân bin cho các cột số.
     """
-    display(chart.plot_univariate(df=df, bin_cols=bin_cols))
+    display(plot_chart.plot_univariate(df=df, bin_cols=bin_cols))
 
 # %% ../nbs/01_stast_fea.ipynb 18
 def plot_multivariate(df, column, bin_cols):
@@ -95,4 +95,4 @@ def plot_multivariate(df, column, bin_cols):
     Returns:
         None: Hiển thị biểu đồ crosstab cho từng cặp biến.
     """
-    display(chart.plot_multivariate(df=df, column=column, bin_cols=bin_cols))
+    display(plot_chart.plot_multivariate(df=df, column=column, bin_cols=bin_cols))

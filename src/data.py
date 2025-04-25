@@ -60,7 +60,6 @@ def get_column_from_dict(data_dict, table_name=None):
             data_dict_temp = data_dict_temp_v2
     return data_dict_temp.keys()
 
-
 def get_data_from_dict(
     sdf, root_path, column_name, table_name=None, drop_columns=None, is_check=False, file_name=None
 ):
@@ -94,13 +93,14 @@ def get_data_from_dict(
                 file_name = column_name
             else:
                 file_name = table_name.replace(".", "_")
-        print(f"Save file into {os.path.join(root_path, f"data/raw/{config.DATE_KEY}/{file_name}.csv")}")
         # return sdf
         df = sdf.toPandas()
-        if not os.path.exists(os.path.join(root_path, f"data/raw/{config.DATE_KEY}")):
-            os.makedirs(os.path.join(root_path, f"data/raw/{config.DATE_KEY}"))
-        df.to_csv(os.path.join(root_path, f"data/raw/{config.DATE_KEY}/{file_name}.csv"), index=False)
-        # return None
+        folder_path = os.path.join(root_path, f"data/raw/{config.DATE_KEY}/{config.PROJECT_NAME
+        }")
+        print(f"Save file into {os.path.join(folder_path, f"{file_name}.csv")}")
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+        df.to_csv(os.path.join(folder_path, f"{file_name}.csv"), index=False)
 
 
 def explode_data_from_dict(sdf, table_name, column_name):
@@ -135,19 +135,21 @@ def explode_data_from_dict(sdf, table_name, column_name):
     _column_name = table_name.replace(".", "_")
     sdf_table = sdf.select("*")
     sdf_table = sdf_table.withColumn(_column_name, F.get_json_object(F.col(column_name), f"$.{table_name}"))
-    drop_cols = list()
+    
     sdf_table = sdf_table.drop(column_name)
     
     # Convert string to list in data
-    udf_func = F.udf(convert_list, T.ArrayType(T.StringType()))
-    sdf_table = sdf_table.withColumn(_column_name, udf_func(F.col(_column_name)))
+    sdf_table = sdf_table.withColumn(
+        _column_name,
+        F.from_json(F.col(_column_name), T.ArrayType(T.StringType()))
+    )
     
     # Exlode data
     sdf_table = sdf_table.withColumn(_column_name, F.explode(F.col(_column_name)))
     return sdf_table
     
 
-def get_data_from_dict_v2(sdf, table_name, column_name, root_path, file_name=None, is_check = False):
+def get_data_from_dict_v2(sdf, table_name, column_name, root_path, map_table, file_name=None, is_check = False):
     """
     Save data have 1_n structure
 
@@ -165,7 +167,6 @@ def get_data_from_dict_v2(sdf, table_name, column_name, root_path, file_name=Non
     """
     sdf_table = explode_data_from_dict(sdf, table_name, column_name)
     _column_name = table_name.replace(".", "_")
-    
     # take columns with JSON data type
     dict_cols = list()
     for col in json.loads(sdf_table.select(_column_name).first()[0]).keys():
@@ -177,16 +178,14 @@ def get_data_from_dict_v2(sdf, table_name, column_name, root_path, file_name=Non
         print(f"getting_data of table {table_name}")
 
     # save data in the original path but do not contain JSON data type columns
-    display(
-        get_data_from_dict(
-            sdf=sdf_table,
-            root_path=root_path,
-            column_name=_column_name,
-            # table_name="InquiredOperation",
-            drop_columns=dict_cols,
-            is_check=is_check,
-            file_name=file_name
-        )
+    get_data_from_dict(
+        sdf=sdf_table,
+        root_path=root_path,
+        column_name=_column_name,
+        # table_name="InquiredOperation",
+        drop_columns=dict_cols,
+        is_check=is_check,
+        file_name=file_name
     )
 
     # save data of JSON data type columns if these columns exist
@@ -195,16 +194,16 @@ def get_data_from_dict_v2(sdf, table_name, column_name, root_path, file_name=Non
             if "1_1" in map_table[col].keys():
                 for _table_name in map_table[col]["1_1"]:
                     print(f"Getting data of {table_name}.{_table_name} ...")
-                    display(
-                        get_data_from_dict(
-                            sdf=sdf_table,
-                            root_path=root_path,
-                            column_name=_column_name,
-                            table_name=_table_name,
-                            is_check=is_check,
-                            file_name = f"{table_name}.{_table_name}".replace(".", "_")
-                        )   
-                    )
+                
+                    get_data_from_dict(
+                        sdf=sdf_table,
+                        root_path=root_path,
+                        column_name=_column_name,
+                        table_name=_table_name,
+                        is_check=is_check,
+                        file_name = f"{table_name}.{_table_name}".replace(".", "_")
+                    )   
+                    
             if "1_n" in map_table[col].keys():
                 for _table_name in map_table[col]["1_n"]:
                     print(f"Getting data of {table_name}.{_table_name} ...")
@@ -373,6 +372,66 @@ def agg_fea(df, idx_col, num_cols, cat_cols):
     agg_cat = agg_cat_fea(df, idx_col, cat_cols)
     
     return pd.concat([agg_num.set_index(idx_col), agg_cat.set_index(idx_col)], axis=1).reset_index()
+
+
+def create_temp_fea(df, idx_col, time_col, num_cols):
+    # Tính thời gian số tháng đầu tiên và cuối cùng có giá trị (so với tháng hiện tại)
+    df_min = df[[idx_col, time_col]].groupby(idx_col).min().add_prefix('first_').add_suffix('_ago')
+    df_max = df[[idx_col, time_col]].groupby(idx_col).max().add_prefix('last_').add_suffix('_ago')
+
+    df_agg = pd.concat([df_min, df_max], axis=1)
+
+    current_month = pd.Timestamp(df[time_col].max()).to_period('M')
+
+    for col in df_agg.columns:
+        df_agg[col] = (
+            current_month - df_agg[col].dt.to_period('M')
+        ).apply(lambda x: x.n)
+
+    # Đếm số tháng có phát sinh
+    month_count = df[idx_col].value_counts().rename(f'{time_col}_count')
+    df_agg = df_agg.join(month_count, how='left')
+
+    # Lấy giá trị tháng hiện tại (latest)
+    df_latest = (
+        df[df['month'].eq(current_month.start_time)][[idx_col] + num_cols].set_index(idx_col).add_prefix('current_')
+    )
+    df_agg = df_agg.join(df_latest, how='left')
+
+    # Lấy giá trị tháng trước đó (second latest)
+    df_second_latest = (
+        df[df['month'].eq((current_month - 1).start_time)][[idx_col] + num_cols].set_index(idx_col).add_prefix('previous_')
+    )
+    df_agg = df_agg.join(df_second_latest)
+
+    return df_agg.reset_index()
+
+
+def agg_temp_fea(df, idx_col, time_col, num_cols, cat_cols, periods):
+    df_agg = pd.DataFrame()
+    current_month = df[time_col].max().to_period('M')
+    # aggregate with feature multi month
+    for n_month in periods:
+        start_month = (current_month - n_month).start_time.strftime('%Y-%m-%d')
+        end_month = current_month.start_time.strftime('%Y-%m-%d')
+        _df = df[(df[time_col] < end_month) & (df[time_col] >= start_month)]
+        df_agg = pd.concat(
+            [
+                df_agg,
+                pd.DataFrame(_df[idx_col].value_counts()).add_suffix(f'_{n_month}m')
+            ],
+            axis=1
+        )
+        df_agg = pd.concat(
+            [
+                df_agg,
+                agg_fea(
+                    df=_df, idx_col=idx_col, num_cols=num_cols, cat_cols=cat_cols
+                ).set_index(idx_col).add_suffix(f'_{n_month}m')
+            ],
+            axis=1
+        )
+    return df_agg.reset_index()
 
 
 ################################

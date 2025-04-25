@@ -238,40 +238,25 @@ def map_province(province, df_region):
 # CACULATE
 ###########
 def caculate_crosstab(df: pd.DataFrame, columns: list, sort_values = None, is_transpose=True):
-    df_cross = pd.crosstab(df[columns[0]], df[columns[1]])
+    df_cross_count = pd.crosstab(df[columns[0]], df[columns[1]])
     if sort_values is not None:
-        df_cross = df_cross[sort_values[1]].T
-        df_cross = df_cross[sort_values[0]].T
+        df_cross_count = df_cross_count[sort_values[1]].T
+        df_cross_count = df_cross_count[sort_values[0]].T
         
-    if df_cross.index.shape[0] < df_cross.columns.shape[0] and is_transpose:
-        df_cross = df_cross.T
+    if df_cross_count.index.shape[0] < df_cross_count.columns.shape[0] and is_transpose:
+        df_cross_count = df_cross_count.T
         columns = [columns[1], columns[0]]
-        
-    df_cross_count = df_cross.reset_index()
-    df_cross_count = df_cross_count.melt(
-        id_vars=columns[0], value_vars=df_cross_count.columns
-    )
     
-    df_cross_percent_all = (100 * df_cross / df.shape[0]).reset_index()
-    df_cross_percent_all = df_cross_percent_all.melt(
-        id_vars=columns[0], value_vars=df_cross_percent_all.columns
-    )
+    df_cross_count.index.name = None
+    df_cross_count.columns.name = None
+
+    df_cross_percent_all = 100 * df_cross_count.div(df_cross_count.sum().sum())
+
+    df_cross_percent_horizontal = 100 * df_cross_count.div(df_cross_count.sum(axis=1), axis=0)
+
+    df_cross_percent_vertical = 100 * df_cross_count.div(df_cross_count.sum(axis=0), axis=1)
     
-    df_cross_percent_horizontal = (
-        100 * (df_cross.T / [df_cross.T[col].sum() for col in df_cross.T.columns]).T
-    ).reset_index()
-    df_cross_percent_horizontal = df_cross_percent_horizontal.melt(
-        id_vars=columns[0], value_vars=df_cross_percent_horizontal.columns
-    )
-    
-    df_cross_percent_vertical = (
-        100 * df_cross / [df_cross[col].sum() for col in df_cross.columns]
-    ).reset_index()
-    df_cross_percent_vertical = df_cross_percent_vertical.melt(
-        id_vars=columns[0], value_vars=df_cross_percent_vertical.columns
-    )
-    
-    return df_cross_count, df_cross_percent_all, df_cross_percent_horizontal, df_cross_percent_vertical
+    return df_cross_count, df_cross_percent_all, df_cross_percent_horizontal, df_cross_percent_vertical, columns
 
 
 ############

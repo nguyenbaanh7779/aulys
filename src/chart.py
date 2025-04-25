@@ -161,6 +161,28 @@ def plot_univariate(df, bin_cols={}, limit_unique=5, size=[1200, 400]):
         display(
             plot_dist(df=df_plot, column=col, sort_value=sort_value, size=size)
         )
+
+
+def plot_heatmap(df, title=None, column_names=[None, None], size=[700, 500]):
+    df_plot = df.copy()
+
+    df_plot.index.name = None
+    df_plot.columns.name = None
+
+    df_plot = df_plot.iloc[::-1]
+    
+    df_plot = pd.melt(frame=df_plot.reset_index(), id_vars='index', value_vars=df.columns)
+    
+    return plot_letsplot(
+        df=df_plot, 
+        x='variable', 
+        y='index', 
+        charts=[letsplot_heatmap(value='value')], 
+        angle=30, 
+        title=title,
+        x_name=column_names[1],
+        y_name=column_names[0]
+    ) + lp.ggsize(*size)
     
 
 def plot_crosstab(
@@ -173,71 +195,28 @@ def plot_crosstab(
         sort_values=sort_values,
         is_transpose=is_transpose
     )
-    heatmap_chart = letsplot_heatmap(value="value")
+    # return dfs_plot
     grid_charts = [
-        plot_letsplot(
-            df=dfs_plot[0], x=columns[0], y=columns[1], 
-            charts=[heatmap_chart],
-            size=(500, 500), title="(#)", angle=angle,
-        ),
-        plot_letsplot(
-            df=dfs_plot[1], x=columns[0], y=columns[1], 
-            charts=[heatmap_chart],
-            size=(500, 500), title="(%)", angle=angle,
-        ),
-        plot_letsplot(
-            df=dfs_plot[2], x=columns[0], y=columns[1], 
-            charts=[heatmap_chart],
-            size=(500, 500), title="(%) theo chiều dọc", angle=angle,
-        ),
-        plot_letsplot(
-            df=dfs_plot[3], x=columns[0], y=columns[1], 
-            charts=[heatmap_chart],
-            size=(500, 500), title="(%) theo chiều ngang", angle=angle,
-        ),
+        plot_heatmap(dfs_plot[0], title="(#)", column_names=dfs_plot[4]),
+        plot_heatmap(dfs_plot[1], title="(%)", column_names=dfs_plot[4]),
+        plot_heatmap(dfs_plot[2], title=f"(%) {dfs_plot[4][0]}", column_names=dfs_plot[4]),
+        plot_heatmap(dfs_plot[3], title=f"(%) {dfs_plot[4][1]}", column_names=dfs_plot[4]),
     ]
-    if label_name is not None:
-        df_plot_lable_good = utils.caculator_crosstab(
-            df[df[label_name].eq(f"{label_elements[0]}")],
-            columns=columns,
-            sort_values=sort_values
-        )[0]
-        df_plot_lable_good = pd.merge(
-            left=df_plot_lable_good.rename(columns={"value": f"{label_elements[0]}_value"}),
-            right=dfs_plot[0].rename(columns={"value": "total_value"}),
-            on=[columns[0], columns[1]]
-        )
-        df_plot_lable_good["value"] = 100 * df_plot_lable_good[f"{label_elements[0]}_value"] / df_plot_lable_good["total_value"]
-        
-        df_plot_lable_bad = utils.caculator_crosstab(
-            df[df[label_name].eq(f"{label_elements[1]}")],
-            columns=columns,
-            sort_values=sort_values
-        )[0]
-        df_plot_lable_bad = pd.merge(
-            left=df_plot_lable_bad.rename(columns={"value": f"{label_elements[1]}_value"}),
-            right=dfs_plot[0].rename(columns={"value": "total_value"}),
-            on=[columns[0], columns[1]]
-        )
-        df_plot_lable_bad["value"] = 100 * df_plot_lable_bad[f"{label_elements[1]}_value"] / df_plot_lable_bad["total_value"]
-        
-        grid_charts += [
-            plot_letsplot(
-                df=df_plot_lable_good.round(2),
-                x=columns[0], y=columns[1], charts=[heatmap_chart],
-                size=(500, 500), title=f"(%) {label_elements[0]}", angle=angle,
-            ),
-            plot_letsplot(
-                df=df_plot_lable_bad.round(2),
-                x=columns[0], y=columns[1], charts=[heatmap_chart],
-                size=(500, 500), title=f"(%) {label_elements[1]}", angle=angle,
-            ),
-        ]
     
     return lp.gggrid(grid_charts, ncol=2,)
 
 
-def plot_multivariate(df, column, bin_cols={}, is_transpose=True, angle: int =None, reversed_y=True, limit_unique=5, size=(1500, 1000)):
+def plot_multivariate(
+        df, 
+        column, 
+        bin_cols={}, 
+        is_transpose=True, 
+        angle: int =None, 
+        reversed_x=False, 
+        reversed_y=False, 
+        limit_unique=5, 
+        size=(1500, 1000)
+):
     """
     Vẽ biểu đồ phân tích đa biến giữa một cột chính (`column`) với tất cả các cột còn lại.
     Tùy vào kiểu dữ liệu (chuỗi hoặc số), cột được chia bin hoặc chuyển thành chuỗi để trực quan hóa.
@@ -253,6 +232,9 @@ def plot_multivariate(df, column, bin_cols={}, is_transpose=True, angle: int =No
     
     # Duyệt qua tất cả các cột ngoại trừ cột phân tích chính
     for col2 in [col for col in df.columns if col != column]:
+        display(
+            Markdown(f"<center><h4 style='font-size:24px'>Distribution of {col2}</h4></center>")
+        )
         df_plot = df.copy()
         cols = [col2, column]
         sort_values = []  # Danh sách lưu thứ tự phân loại các giá trị trong biểu đồ
@@ -263,8 +245,13 @@ def plot_multivariate(df, column, bin_cols={}, is_transpose=True, angle: int =No
             )
             sort_values.append(sort_value)
 
+        if reversed_x:
+            sort_values[0] =  sort_values[0][::-1]
+
         if reversed_y:
             sort_values[1] =  sort_values[1][::-1]
+    
+        # return df_plot, sort_values
 
         # Vẽ biểu đồ phân phối chéo giữa column và col2
         display(
@@ -279,58 +266,81 @@ def plot_multivariate(df, column, bin_cols={}, is_transpose=True, angle: int =No
     
 
 def plot_crosstab_by_lable(
-    df: pd.DataFrame, columns: list, lable: str, label_elements=None, 
-    angle: int=None, sort_values: list=None
+    df: pd.DataFrame, 
+    columns: list, 
+    label_name: str, 
+    label_elements=None, 
+    sort_values: list=None,
+    **kwargs
 ):
-    dfs_plot_lable_good = utils.caculator_crosstab(
-        df[df[lable].eq(f"{label_elements[0]}")],
+    dfs_plot = utils.caculate_crosstab(
+        df,
         columns=columns,
-        sort_values=sort_values
+        sort_values=sort_values,
     )
-    dfs_plot_lable_bad = utils.caculator_crosstab(
-        df[df[lable].eq(f"{label_elements[1]}")],
+    dfs_plot_good = utils.caculate_crosstab(
+        df[df[label_name].eq(label_elements['good'])],
         columns=columns,
-        sort_values=sort_values
+        sort_values=sort_values,
     )
-    
-    heatmap_chart = letsplot_heatmap(value="value")
+    dfs_plot_bad = utils.caculate_crosstab(
+        df[df[label_name].eq(label_elements['bad'])],
+        columns=columns,
+        sort_values=sort_values,
+    )
+
+    df_per_good = 100 * dfs_plot_good[0] / dfs_plot[0]
+    df_per_bad = 100 * dfs_plot_bad[0] / dfs_plot[0]
     
     return lp.gggrid(
         [
-            plot_letsplot(
-                df=dfs_plot_lable_good[0], x=columns[0], y=columns[1], charts=[heatmap_chart], size=(500, 500),
-                title=f"{label_elements[0]} (#)", angle=angle,
+            plot_heatmap(
+                df=df_per_good,
+                column_names=columns, 
+                title="(%) good",
             ),
-            plot_letsplot(
-                df=dfs_plot_lable_bad[0], x=columns[0], y=columns[1], charts=[heatmap_chart], size=(500, 500),
-                title=f"{label_elements[1]}(#)", angle=angle,
+            plot_heatmap(
+                df=df_per_bad,
+                column_names=columns, 
+                title="(%) bad",
             ),
-            plot_letsplot(
-                df=dfs_plot_lable_good[1], x=columns[0], y=columns[1], charts=[heatmap_chart],
-                size=(500, 500), title=f"{label_elements[0]} (%)", angle=angle,
+            plot_heatmap(
+                df=dfs_plot_good[0],
+                column_names=columns, title="(#) good",
             ),
-            plot_letsplot(
-                df=dfs_plot_lable_bad[1], x=columns[0], y=columns[1], charts=[heatmap_chart],
-                size=(500, 500), title=f"{label_elements[1]}(%)", angle=angle,
+            plot_heatmap(
+                df=dfs_plot_bad[0],
+                column_names=columns, title="(#) bad",
             ),
-            plot_letsplot(
-                df=dfs_plot_lable_good[2], x=columns[0], y=columns[1], charts=[heatmap_chart],
-                size=(500, 500), title=f"{label_elements[0]} (%) theo chiều ngang", angle=angle,
+            plot_heatmap(
+                df=dfs_plot_good[1],
+                column_names=columns, 
+                title=f"(%) good all",
             ),
-            plot_letsplot(
-                df=dfs_plot_lable_bad[2], x=columns[0], y=columns[1], charts=[heatmap_chart],
-                size=(500, 500), title=f"{label_elements[1]}(%) theo chiều ngang", angle=angle,
+            plot_heatmap(
+                df=dfs_plot_bad[1],
+                column_names=columns, 
+                title=f"(%) bad all"
             ),
-            plot_letsplot(
-                df=dfs_plot_lable_good[3], x=columns[0], y=columns[1], charts=[heatmap_chart],
-                size=(500, 500), title=f"{label_elements[0]} (%) theo chiều dọc", angle=angle,
+            plot_heatmap(
+                df=dfs_plot_good[2],
+                column_names=columns,
+                title=f"(%) good {columns[0]}"
             ),
-            plot_letsplot(
-                df=dfs_plot_lable_bad[3], x=columns[0], y=columns[1], charts=[heatmap_chart],
-                size=(500, 500), title=f"{label_elements[1]}(%) theo chiều dọc", angle=angle,
+            plot_heatmap(
+                df=dfs_plot_bad[2],
+                column_names=columns, title=f"(%) bad {columns[0]}"
+            ),
+            plot_heatmap(
+                df=dfs_plot_good[3],
+                column_names=columns, title=f"(%) good {columns[1]}"
+            ),
+            plot_heatmap(
+                df=dfs_plot_bad[3],
+                column_names=columns, title=f"(%) bad {columns[1]}"
             ),
         ],
-        ncol=2,
+        ncol=2
     )
     
 
@@ -417,21 +427,6 @@ def plot_univariate_by_label(df_bin, size_chart=(1500, 1000), n_limit=None, rang
                 ncol=2
             ) + lp.ggsize(size_chart[0], int(size_chart[1] / 2))
         )
-
-
-def plot_heatmap(df, title=None):
-    df_plot = df.copy()
-
-    df_plot.index.name = None
-    df_plot.columns.name = None
-
-    df_plot = df_plot.iloc[::-1]
-    
-    df_plot = pd.melt(frame=df_plot.reset_index(), id_vars='index', value_vars=df.columns)
-
-    return plot_letsplot(
-        df=df_plot, x='variable', y='index', charts=[letsplot_heatmap(value='value')], angle=30, title=title
-    )
 
 
 ##############################
@@ -616,10 +611,10 @@ def plot_evaluted_classification_metric(y_true, y_probPred):
     display(
         lp.gggrid(
             [
-                chart.plot_ROC(y_true, y_probPred),
-                chart.plot_KS(y_true, y_probPred),
-                chart.plot_lift(y_true, y_probPred),
-                chart.plot_gain(y_true, y_probPred),
+                plot_ROC(y_true, y_probPred),
+                plot_KS(y_true, y_probPred),
+                plot_lift(y_true, y_probPred),
+                plot_gain(y_true, y_probPred),
             ],
             ncol=2
         )   
