@@ -633,13 +633,13 @@ def create_reduce(X_train, X_test, y_train=None, **reduce_params):
             X_test=X_test,
             **reduce_params
         )
-    elif reduce_method == "SIR":
-        X_train_non_importance, X_test_non_importance = create_sir(
-            X_train=X_train,
-            X_test=X_test,
-            y_train=y_train,
-            **reduce_params
-        )
+    # elif reduce_method == "SIR":
+    #     X_train_non_importance, X_test_non_importance = create_sir(
+    #         X_train=X_train,
+    #         X_test=X_test,
+    #         y_train=y_train,
+    #         **reduce_params
+    #     )
         
     return X_train_non_importance, X_test_non_importance
 
