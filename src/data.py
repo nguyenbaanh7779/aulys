@@ -610,15 +610,15 @@ def create_pca(X_train, X_test, **pca_params):
     X_test_pca = pd.DataFrame(data=X_test_pca, columns=pc_columns)
     return X_train_pca, X_test_pca
 
-def create_sir(X_train, X_test, y_train=None, **sir_params):
-    sir = SlicedInverseRegression(n_directions=5)
-    check = sir.fit(X_train, y_train)
-    X_train_sir = sir.transform(X_train)
-    X_test_sir = sir.transform(X_test)
-    pc_columns = [f"PC_{i + 1}" for i in range(X_train_sir.shape[1])]
-    X_train_sir = pd.DataFrame(data=X_train_sir, columns=pc_columns)
-    X_test_sir = pd.DataFrame(data=X_test_sir, columns=pc_columns)
-    return X_train_sir, X_test_sir
+# def create_sir(X_train, X_test, y_train=None, **sir_params):
+#     sir = SlicedInverseRegression(n_directions=5)
+#     check = sir.fit(X_train, y_train)
+#     X_train_sir = sir.transform(X_train)
+#     X_test_sir = sir.transform(X_test)
+#     pc_columns = [f"PC_{i + 1}" for i in range(X_train_sir.shape[1])]
+#     X_train_sir = pd.DataFrame(data=X_train_sir, columns=pc_columns)
+#     X_test_sir = pd.DataFrame(data=X_test_sir, columns=pc_columns)
+#     return X_train_sir, X_test_sir
 
 
 def create_reduce(X_train, X_test, y_train=None, **reduce_params):
