@@ -280,11 +280,6 @@ def get_dataset(root_path, group_tables=None, use_cols=None, drop_cols=None, **k
             right_index=True,
             how="left"
         )
-
-    if use_cols is not None:
-        df = df[["label"] + used_cols]
-    if drop_cols is not None:
-        df = df.drop(columns=drop_cols)
     return df
     
 
